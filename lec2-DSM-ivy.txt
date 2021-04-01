@@ -1,0 +1,113 @@
+# Distributed shared memory
+
+
+Why DSM is not possible?
+
+- Slow :(
+
+-------
+Example
+    (1) MUL R1, R2, R3
+    (2) ST X, R1
+    (3) LD Y, R4
+
+- The order may not be 1,2,3 because of out of order execution for performance considerations.
+- we can not execute (2) because dependency on (1)
+- we may not be execute (3) if Y AND X points to the same location
+- (1) may be slow, (2, 3) involve memory IOs that would be even more slow.
+
+---------
+
+Example
+
+CPU 0
+    value = compute()   | ST value, R1     
+    done = True         | ST done, 1
+
+CPU 1
+    while (! done);     | LD done, R2
+    use(value);         | LD value, R3
+
+
+It depends on the processors, they have different memory models!
+- on Intel processor, it works; but it may not work on different processors;
+- on CPU 0, it's possible the two instructions execute differently.
+
+---------
+Example (Lamport locks)
+
+x = y = 0
+
+CPU 0
+    x = 1
+    if y == 0:
+        critical section 
+CPU 1
+    y = 1
+    if x == 0:
+        critical section
+
+- It does not work on modern processors
+- x and y have no dependencies
+
+
+-----
+
+Consistency models
+
+
+STRICT CONSISTENCY (most strict)
+
+1. each CPU executes its instructions in order
+2. each LD gets value of **most recent** ST to that address
+
+"wall clock time" - universal timestamp
+most recent = last timestamp 
+
+For multiple processors, LD may be expensive since it needs to know the status of the location on all other processors. this is EXPENSIVE!
+
+-------
+
+SEQUENTIAL CONSISTENCY 
+
+1. each CPU executes its instructions in order
+2. all CPUs see all inst. in the same **total** order
+
+the interleaving may be arbitrary.
+There is always an order by the "wall clock time".
+
+
+
+
+OR
+
+2. All operations on a memory location are ordered by that location. **(serialization point)**
+
+- who control the orchestration of the whole system (resolves the conflicts)
+
+-------
+
+IVY implements the sequential consistency with locks,
+
+--------
+
+Sequential consistency can do crazy things.
+
+![](https://raw.githubusercontent.com/byshen/picrepo/master/20210401090646.png)
+1A, 2A, 3A, 1B, 4A, 4B, 2B, 3B
+
+
+coherency == sequential consistency
+
+
+--------
+Key principle:
+
+- Make most frequent stuff cheap.
+
+
+
+
+
+
+
